@@ -27,7 +27,7 @@ def init_ai_client():
       api_key=api_key,
     )
 
-def main():
+def main(rounds: int = 1):
     print("Welcome to the AI Game!")
     secret_word = input("Please enter the secret word as the game master: ").strip()
     try:
@@ -63,24 +63,48 @@ def main():
 
     game_history = []
 
+    for i in range(rounds):
+        print(f"\nRound {i + 1} starts now!")
+        for player in players:
+            print(f"{player.role} {player.name} is taking their turn...")
+            try:
+                turn_data = player.take_turn(game_history)
+                # print(f"Turn data for {player.role} {player.name}: {turn_data}")
+                word_said = turn_data.get("word_said", "")
+                response = turn_data.get("response_text", "")
+                thought_process = turn_data.get("thought_process", "")
+
+
+                print(f"{player.role} {player.name} said the word: {word_said}")
+                print(f"Response from {player.role} {player.name}: {response}")
+                #print(f"Thought process of {player.role} {player.name}: {thought_process}")
+                print()
+
+                game_history.append({"player": player.name, "word": word_said, "response": response})
+            except Exception as e:
+                print(f"Error during {player.role} {player.name}'s turn: {e}")
+
+        print("Game round complete. Game history:")
+        for entry in game_history:
+            # print(f"{entry['player']} said '{entry['word']}' with response: {entry['response']} and thought process: {entry.get('thought_process', '')}")
+            print(f"{entry['player']} said '{entry['word']}' with response: {entry['response']}")
+
+    print("Voting phase begins...")
     for player in players:
-        print(f"{player.role} {player.name} is taking their turn...")
         try:
-            turn_data = player.take_turn(game_history)
-            word_said = turn_data.get("word_said", "")
-            response = turn_data.get("response", "")
+            vote_data = player.take_vote(game_history)
+            if vote_data.get("action") != "cast_vote":
+                raise ValueError(f"Vote action for {player.role} {player.name} is not 'cast_vote'.")
 
-            print(f"{player.role} {player.name} said the word: {word_said}")
-            print(f"Response from {player.role} {player.name}: {response}")
-
-            game_history.append({"player": player.name, "word": word_said, "response": response})
+            vote_for = vote_data.get("vote_for", "")
+            # justification = vote_data.get("justification", "")
+            response_text = vote_data.get("response_text", "")
+            print(f"{player.role} {player.name} votes for {vote_for} with response: {response_text}")
         except Exception as e:
-            print(f"Error during {player.role} {player.name}'s turn: {e}")
+            print(f"Error during voting for {player.role} {player.name}: {e}")
 
-    print("Game round complete. Game history:")
-    for entry in game_history:
-        print(f"{entry['player']} said '{entry['word']}' with response: {entry['response']}")
+    print("Game over. Thank you for playing!")
 
 
 if __name__ == "__main__":
-    main()
+    main(rounds=3)

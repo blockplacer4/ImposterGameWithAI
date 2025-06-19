@@ -2,13 +2,13 @@ from openai import OpenAI
 import json
 
 class Player:
-    def __init__(self, name: str, ai_client: OpenAI, sysprompt: str):
+    def __init__(self, name: str, ai_client: OpenAI, sysprompt: str, secret_word: str):
         if not name or not ai_client or not sysprompt:
             raise ValueError("Name, AI client, and system prompt must be provided.")
         self.name = name
         self.ai_client = ai_client
         self.sysprompt = sysprompt
-
+        self.secret_word = secret_word
         self.conversation_history = [{"role": "system", "content": self.sysprompt}]
         self.role = "Not assigned"
 
@@ -37,3 +37,30 @@ class Player:
         }
 
         return self._call_ai(turn_request_json)
+
+    def take_vote(self, user_message: list) -> dict:
+        vote_request_json = {
+            "type": "request_vote",
+            "history": user_message,
+        }
+
+        return self._call_ai(vote_request_json)
+
+    def initialize_on_api(self):
+        init_json = {
+            "type": "init",
+            "role": self.role,
+            "secret_word": self.secret_word
+        }
+
+        response_data = self._call_ai(init_json)
+        # print(f"Initialization request sent: {init_json}")
+        # print(f"Initialization response: {response_data}")
+
+        if response_data.get("action") != "confirm_init":
+            raise ValueError("Initialization response action is not 'confirm_init'.")
+        if response_data.get("response_text") == "":
+            raise ValueError(f"Expected role a response text, but got nothing.")
+
+        print(f"Initialization response: {response_data}")
+        return response_data
