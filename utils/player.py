@@ -16,7 +16,7 @@ class Player:
         self.conversation_history.append({"role": "user", "content": json.dumps(user_message)})
         try:
             response = self.ai_client.chat.completions.create(
-                model="x-ai/grok-3-mini-beta",
+                model="google/gemini-2.5-flash-lite-preview-06-17",
                 messages=self.conversation_history,
                 response_format={"type": "json_object"},
             )
@@ -29,11 +29,11 @@ class Player:
         except Exception as e:
             raise RuntimeError(f"AI call failed: {e}")
 
-    def take_turn(self, user_message: list) -> dict:
+    def take_turn(self, history: list) -> dict:
         turn_request_json = {
             "type": "your_turn_to_say_word",
-            "history": user_message,
-            "last_event": user_message[-1] if user_message else None
+            "history": history,
+            "last_event": history[-1] if history else None
         }
 
         return self._call_ai(turn_request_json)
@@ -45,6 +45,18 @@ class Player:
         }
 
         return self._call_ai(vote_request_json)
+
+    def comment_on_turn(self, history: list) -> dict:
+        last_event = history[-1] if history else None
+        comment_request_json = {
+            "type": "request_comment",
+            "player_who_said_word": last_event['player'] if last_event else "Unknown",
+            "word_just_said": last_event['word'] if last_event["action"] == "said_word" else "No word said, maybe someone commented",
+            "history": history,
+            "last_event": last_event
+        }
+
+        return self._call_ai(comment_request_json)
 
     def initialize_on_api(self):
         init_json = {
