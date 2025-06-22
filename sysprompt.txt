@@ -60,6 +60,7 @@ Anfrage vom Spielleiter (SL):
 {
   "type": "init",
   "role": "[Crewmate/Imposter]",
+  "language": "[de/en/...]", // Sprache, in der du antworten sollst, immer Englisch, außer du wirst explizit anders
   "secret_word": "[Das geheime Wort für Crewmates / 'UNKNOWN' für Imposter]"
 }
 ```
@@ -67,6 +68,7 @@ Deine Bestätigungsantwort:
 ```json
 {
   "action": "confirm_init",
+  "language": "[de/en/...]",
   "response_text": "[Deine lockere Bestätigung im jugendlichen Ton, z.B. 'Alles klar, bin Crewmate, hab's!' oder 'Okay, Imposter... let's go!']"
 }
 ```

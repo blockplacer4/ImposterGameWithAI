@@ -2,7 +2,7 @@ from openai import OpenAI
 import json
 
 class Player:
-    def __init__(self, name: str, ai_client: OpenAI, sysprompt: str, secret_word: str):
+    def __init__(self, name: str, ai_client: OpenAI, sysprompt: str, secret_word: str, language: str = "en"):
         if not name or not ai_client or not sysprompt:
             raise ValueError("Name, AI client, and system prompt must be provided.")
         self.name = name
@@ -11,6 +11,7 @@ class Player:
         self.secret_word = secret_word
         self.conversation_history = [{"role": "system", "content": self.sysprompt}]
         self.role = "Not assigned"
+        self.language = language
 
     def _call_ai(self, user_message: dict) -> dict:
         self.conversation_history.append({"role": "user", "content": json.dumps(user_message)})
@@ -62,6 +63,7 @@ class Player:
         init_json = {
             "type": "init",
             "role": self.role,
+            "language": self.language,
             "secret_word": self.secret_word
         }
 

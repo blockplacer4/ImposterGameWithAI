@@ -73,8 +73,11 @@ def take_turns(players, rounds, winning_word=None):
                 game_history.append({"player": player.name, "action": "say_word", "word": word_said, "response": response})
                 random_player = random.choice([p for p in players if p != player])
                 if random_player != player:
-                    comment = comment_on_last_turn(random_player, game_history)
-                    print(f"{random_player.role} {random_player.name} commented: {comment}")
+                    if random_player.role == "Imposter": # temporary check for imposter because most of the time the comment from the imposter are revealing him self as the imposter because of his comment
+                        print(f"{random_player.role} {random_player.name} is an imposter and will not comment.")
+                    else:
+                        comment = comment_on_last_turn(random_player, game_history)
+                        print(f"{random_player.role} {random_player.name} commented: {comment}")
             except Exception as e:
                 print(f"Error during {player.role} {player.name}'s turn: {e}")
 
@@ -101,6 +104,7 @@ def vote_imposter(players, game_history):
 def main(rounds: int = 1):
     print("Welcome to the AI Game!")
     secret_word = input("Please enter the secret word as the game master: ").strip()
+    language = input("Please enter the language for the game (default is English): ").strip() or "en"
     try:
         sysprompt = load_sysprompt()
         ai_client = init_ai_client()
@@ -110,10 +114,11 @@ def main(rounds: int = 1):
         return
 
     print("Creating players...")
+    print("Settings language to English and initializing roles...")
     players = [
-        Crewmate(name="Crewmate1", ai_client=ai_client, sysprompt=sysprompt, secret_word=secret_word),
-        Crewmate(name="Crewmate2", ai_client=ai_client, sysprompt=sysprompt, secret_word=secret_word),
-        Imposter(name="Imposter1", ai_client=ai_client, sysprompt=sysprompt)
+        Crewmate(name="Linus", ai_client=ai_client, sysprompt=sysprompt, secret_word=secret_word, language=language),
+        Crewmate(name="Jan", ai_client=ai_client, sysprompt=sysprompt, secret_word=secret_word, language=language),
+        Imposter(name="Alex", ai_client=ai_client, sysprompt=sysprompt, language=language)
     ]
 
     random.shuffle(players)
