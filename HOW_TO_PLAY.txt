@@ -1,0 +1,122 @@
+================================
+HOW TO PLAY - API & WEBSOCKET GUIDE
+================================
+
+This guide explains how to interact with the Imposter Game server.
+
+---
+### Step 1: Prerequisites
+---
+
+1. Make sure you have Python installed.
+2. Install the required packages:
+   pip install -r requirements.txt
+
+---
+### Step 2: Start the Server
+---
+
+Run the server from your terminal. It will be available at http://127.0.0.1:8080.
+
+Command:
+```
+python main.py
+```
+
+---
+### Step 3: Create a Game Lobby
+---
+
+To start a new game, you need to create a lobby by sending a POST request to the server.
+
+- **URL**: `http://127.0.0.1:8080/lobby`
+- **Method**: `POST`
+- **Body**: JSON
+
+**Example JSON Payload:**
+```json
+{
+  "language": "en",
+  "player_name": "YourName",
+  "player_role": "crewmate",
+  "num_agents": 3,
+  "difficulty": "medium",
+  "secret_word": "TheSecretWord"
+}
+```
+
+**Field Descriptions:**
+- `language` (string): Language for the AI (e.g., "en", "de").
+- `player_name` (string): Your name in the game.
+- `player_role` (string): Your desired role. Can be `"crewmate"` or `"imposter"`.
+- `num_agents` (integer): How many AI players to play against (1-5).
+- `difficulty` (string): AI difficulty. Can be `"easy"`, `"medium"`, or `"hard"`.
+- `secret_word` (string): The secret word for the crewmates. This is only required if your `player_role` is `"crewmate"`.
+
+**Server Response:**
+If successful, the server will respond with a JSON object containing the lobby ID.
+
+**Example Response:**
+```json
+{
+  "lobby_id": "lobby_f9469b3e834a3f9e"
+}
+```
+Save this `lobby_id`. You will need it for the next step.
+
+---
+### Step 4: Connect via WebSocket
+---
+
+Once you have a `lobby_id`, connect to the game's WebSocket to start playing.
+
+- **URL Format**: `ws://127.0.0.1:8080/ws/{lobby_id}/{user_name}`
+
+Replace `{lobby_id}` and `{user_name}` with your actual lobby ID and name.
+
+**Example URL:**
+`ws://127.0.0.1:8080/ws/lobby_f9469b3e834a3f9e/YourName`
+
+---
+### Step 5: Game Interaction (WebSocket Messages)
+---
+
+All communication during the game happens via JSON messages over the WebSocket connection.
+
+#### A. Sending Messages to the Server
+
+1.  **Start the Game:**
+    After connecting, you must send this message to begin the game.
+    ```json
+    {"command": "start_game"}
+    ```
+
+2.  **Submit Your Word:**
+    When the server tells you it's your turn (see `human_turn_prompt` below), send your chosen word.
+    ```json
+    {"command": "submit_word", "word": "YourChosenWord"}
+    ```
+
+#### B. Receiving Messages (Events) from the Server
+
+You will receive messages from the server with different "event" types.
+
+- **`user_joined`**: A new user has connected to the lobby.
+- **`initializing_players`**: The AI players are being initialized.
+- **`game_started`**: The game is ready.
+- **`ai_thinking`**: The AI is processing its turn.
+- **`turn_result`**: A player (AI or human) has taken their turn. The `data` field contains the details.
+- **`human_turn_prompt`**: It is your turn to act. You should now send a `submit_word` command.
+
+---
+### Summary: Full Game Flow
+---
+
+1.  `python main.py` to start the server.
+2.  `POST` to `/lobby` with your game settings.
+3.  Get the `lobby_id` from the response.
+4.  Connect to `ws://127.0.0.1:8080/ws/{lobby_id}/{your_name}`.
+5.  Send `{"command": "start_game"}`.
+6.  Wait for a `human_turn_prompt` event.
+7.  Send `{"command": "submit_word", "word": "..."}`.
+8.  Repeat step 6 and 7 until the game ends.

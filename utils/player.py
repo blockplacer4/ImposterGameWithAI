@@ -1,5 +1,6 @@
 from openai import OpenAI
 import json
+import asyncio
 
 class Player:
     def __init__(self, name: str, ai_client: OpenAI, sysprompt: str, secret_word: str, language: str = "en"):
@@ -13,10 +14,12 @@ class Player:
         self.role = "Not assigned"
         self.language = language
 
-    def _call_ai(self, user_message: dict) -> dict:
+    async def _call_ai(self, user_message: dict) -> dict:
         self.conversation_history.append({"role": "user", "content": json.dumps(user_message)})
         try:
-            response = self.ai_client.chat.completions.create(
+            # Wrap the synchronous, blocking call in asyncio.to_thread
+            response = await asyncio.to_thread(
+                self.ai_client.chat.completions.create,
                 model="google/gemini-2.5-flash-lite-preview-06-17",
                 messages=self.conversation_history,
                 response_format={"type": "json_object"},
@@ -25,56 +28,50 @@ class Player:
             self.conversation_history.append({"role": "assistant", "content": ai_message})
             return json.loads(ai_message)
         except json.JSONDecodeError as e:
-            print("AI response could not be parsed as valid JSON: ", e)
+            print(f"AI response for {self.name} could not be parsed as valid JSON: ", e)
             raise ValueError("AI response is not valid JSON.")
         except Exception as e:
-            raise RuntimeError(f"AI call failed: {e}")
+            raise RuntimeError(f"AI call for {self.name} failed: {e}")
 
-    def take_turn(self, history: list) -> dict:
+    async def take_turn(self, history: list) -> dict:
         turn_request_json = {
             "type": "your_turn_to_say_word",
             "history": history,
             "last_event": history[-1] if history else None
         }
+        return await self._call_ai(turn_request_json)
 
-        return self._call_ai(turn_request_json)
-
-    def take_vote(self, user_message: list) -> dict:
+    async def take_vote(self, user_message: list) -> dict:
         vote_request_json = {
             "type": "request_vote",
             "history": user_message,
         }
+        return await self._call_ai(vote_request_json)
 
-        return self._call_ai(vote_request_json)
-
-    def comment_on_turn(self, history: list) -> dict:
+    async def comment_on_turn(self, history: list) -> dict:
         last_event = history[-1] if history else None
         comment_request_json = {
             "type": "request_comment",
             "player_who_said_word": last_event['player'] if last_event else "Unknown",
-            "word_just_said": last_event['word'] if last_event["action"] == "said_word" else "No word said, maybe someone commented",
+            "word_just_said": last_event['word'] if last_event and last_event.get("action") == "say_word" else "No word said, maybe someone commented",
             "history": history,
             "last_event": last_event
         }
+        return await self._call_ai(comment_request_json)
 
-        return self._call_ai(comment_request_json)
-
-    def initialize_on_api(self):
+    async def initialize_on_api(self):
         init_json = {
             "type": "init",
             "role": self.role,
             "language": self.language,
             "secret_word": self.secret_word
         }
-
-        response_data = self._call_ai(init_json)
-        # print(f"Initialization request sent: {init_json}")
-        # print(f"Initialization response: {response_data}")
-
+        response_data = await self._call_ai(init_json)
         if response_data.get("action") != "confirm_init":
             raise ValueError("Initialization response action is not 'confirm_init'.")
-        if response_data.get("response_text") == "":
-            raise ValueError(f"Expected role a response text, but got nothing.")
-
-        print(f"Initialization response: {response_data}")
+        if not response_data.get("response_text"):
+            raise ValueError("Expected a response text, but got nothing.")
         return response_data
+
+    def __str__(self):
+        return f"{self.role} {self.name}"

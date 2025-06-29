@@ -1,0 +1,108 @@
+This document outlines the API and WebSocket communication formats for the Imposter Game.
+
+## API Endpoints
+
+### Create Lobby
+
+- **Endpoint:** `POST /lobby`
+- **Description:** Creates a new game lobby.
+- **Request Body:**
+  ```json
+  {
+    "language": "en",
+    "player_name": "YourName",
+    "player_role": "crewmate",
+    "num_agents": 5,
+    "difficulty": "easy",
+    "secret_word": "your_secret_word"
+  }
+  ```
+- **Response Body:**
+  ```json
+  {
+    "lobby_id": "lobby_1234567890abcdef",
+    "secret_word": "your_secret_word"
+  }
+  ```
+
+## WebSocket Communication
+
+- **Endpoint:** `ws://<host>:<port>/ws/{lobby_id}/{user_name}`
+- **Description:** Handles real-time game events.
+
+### Client-to-Server Messages
+
+- **Start Game:**
+  ```json
+  {
+    "command": "start_game"
+  }
+  ```
+- **Submit Word:**
+  ```json
+  {
+    "command": "submit_word",
+    "word": "the_word_you_chose"
+  }
+  ```
+
+### Server-to-Client Messages
+
+- **User Joined:**
+  ```json
+  {
+    "event": "user_joined",
+    "user_name": "PlayerName",
+    "players": [
+      { "name": "Player1", "role": "crewmate" },
+      { "name": "Player2", "role": "imposter" }
+    ]
+  }
+  ```
+- **User Left:**
+  ```json
+  {
+    "event": "user_left",
+    "user_name": "PlayerName"
+  }
+  ```
+- **Initializing Players:**
+  ```json
+  {
+    "event": "initializing_players"
+  }
+  ```
+- **Game Started:**
+  ```json
+  {
+    "event": "game_started"
+  }
+  ```
+- **Human Turn Prompt:**
+  ```json
+  {
+    "event": "human_turn_prompt",
+    "player_name": "YourName"
+  }
+  ```
+- **AI is Thinking:**
+  ```json
+  {
+    "event": "ai_thinking"
+  }
+  ```
+- **Turn Result (from both AI and Human):**
+  ```json
+  {
+    "event": "turn_result",
+    "data": {
+      "player_name": "Agent1",
+      "player_role": "crewmate",
+      "turn_data": {
+        "action": "say_word",
+        "word_said": "related_word",
+        "response_text": "The AI's reasoning for choosing the word."
+      }
+    }
+  }
+  ```

@@ -1,0 +1,14 @@
+To get the secret word when creating a lobby, you need to make a POST request to the `/lobby` endpoint.
+You no longer need to provide a `secret_word` in the request body. The server will generate one for you based on the selected difficulty.
+
+The response will be a JSON object containing the `lobby_id` and the randomly selected `secret_word`.
+
+Example response:
+```json
+{
+  "lobby_id": "lobby_1234567890abcdef",
+  "secret_word": "a_randomly_generated_word"
+}
+```
+
+You can then store the `secret_word` locally in your mobile app.
